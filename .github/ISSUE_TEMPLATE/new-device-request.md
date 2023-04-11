@@ -1,6 +1,6 @@
 ---
 name: New device request
-about: A template for required info for a new device to be added
+about: Provide the detected device info to request a new device be supported.
 title: New Device Request
 labels: ''
 assignees: Mikrz
