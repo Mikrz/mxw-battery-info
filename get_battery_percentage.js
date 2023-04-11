@@ -64,45 +64,53 @@ const log_bfr = bfr => {
     );
     debug_log("Detected device:")
     debug_log(device_info);
-    try {
-        const device = new HID.HID(device_info.path);
+    if (device_info != undefined){
+        try {
+            const device = new HID.HID(device_info.path);
 
-        const bfr = Buffer.alloc(65);
+            const bfr = Buffer.alloc(65);
 
-        bfr[3] = 0x02;
-        bfr[4] = 0x02;
-        bfr[6] = 0x83;
+            bfr[3] = 0x02;
+            bfr[4] = 0x02;
+            bfr[6] = 0x83;
 
-        device.sendFeatureReport(bfr);
+            device.sendFeatureReport(bfr);
 
-        await sleep(50);
+            await sleep(50);
 
-        const report = device.getFeatureReport(0, 65);
+            const report = device.getFeatureReport(0, 65);
 
-        log_bfr(report);
+            log_bfr(report);
 
-        percentage = report[8];
+            percentage = report[8];
 
-        debug_log("\nPretty feature report:")
-        debug_log(`${report} \n`);
+            debug_log("\nPretty feature report:")
+            debug_log(`${report} \n`);
 
+            if (raw){
+                console.log(percentage);
+            } else {
+                console.log(`Battery: ${percentage}%`);
+            }
+        } catch (error) {
+            if ( error instanceof TypeError ){
+                console.log("Likely a udev issue, see error below!");
+                console.error(error.message);
+                console.log("\nTry adding the following udev rules to /etc/udev/rules.d/<number>-glorious.rules and replug the device\n");
+                console.log(`SUBSYSTEM=="input", GROUP="input", MODE="0666"`);
+                console.log(`SUBSYSTEM=="usb", ATTRS{idVendor}=="${device_info.vendorId.toString(16)}", ATTRS{idProduct}=="${device_info.productId.toString(16)}", MODE:="666", GROUP="plugdev"`);
+                console.log(`KERNEL=="hidraw*", ATTRS{idVendor}=="${device_info.vendorId.toString(16)}", ATTRS{idProduct}=="${device_info.productId.toString(16)}", MODE="0666", GROUP="plugdev"`);
+            } else {
+                console.error("Unknown error! See error below:");
+                console.log(error);
+            }
+            process.exit(1);
+        }
+    } else {
         if (raw){
-            console.log(percentage);
+            console.log('-1');
         } else {
-            console.log(`Battery: ${percentage}%`);
+            console.log("No device detected or undefined, see --debug");
         }
-    } catch (error) {
-        if ( error instanceof TypeError ){
-            console.log("Likely a udev issue, see error below!");
-            console.error(error.message);
-            console.log("\nTry adding the following udev rules to /etc/udev/rules.d/<number>-glorious.rules and replug the device\n");
-            console.log(`SUBSYSTEM=="input", GROUP="input", MODE="0666"`);
-            console.log(`SUBSYSTEM=="usb", ATTRS{idVendor}=="${device_info.vendorId.toString(16)}", ATTRS{idProduct}=="${device_info.productId.toString(16)}", MODE:="666", GROUP="plugdev"`);
-            console.log(`KERNEL=="hidraw*", ATTRS{idVendor}=="${device_info.vendorId.toString(16)}", ATTRS{idProduct}=="${device_info.productId.toString(16)}", MODE="0666", GROUP="plugdev"`);
-        } else {
-            console.error("Unknown error! See error below:");
-            console.log(error);
-        }
-        process.exit(1);
     }
 })();
